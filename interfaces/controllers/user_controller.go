@@ -4,8 +4,11 @@ import (
 	_ "encoding/hex"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
+	"io/ioutil"
 	"net/http"
+	"time"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/hukurou-s/user-auth-api-with-jwt/domain"
 	"github.com/hukurou-s/user-auth-api-with-jwt/interfaces/database"
 	"github.com/hukurou-s/user-auth-api-with-jwt/usecase"
@@ -54,17 +57,41 @@ func (controller *UserController) Login(c Context) error {
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
-	if compareHashedPassword(user.Password, loginParams.Password) {
-		return c.JSON(http.StatusOK, struct {
+	if !compareHashedPassword(user.Password, loginParams.Password) {
+		return c.JSON(http.StatusUnauthorized, struct {
 			Status string `json:"status"`
 		}{
-			Status: "success",
+			Status: "fail",
 		})
+
 	}
-	return c.JSON(http.StatusUnauthorized, struct {
+
+	keyData, err := ioutil.ReadFile("./rsa/id_rsa")
+	if err != nil {
+		panic(err)
+	}
+	key, err := jwt.ParseRSAPrivateKeyFromPEM(keyData)
+	if err != nil {
+		panic(err)
+	}
+
+	token := jwt.New(jwt.SigningMethodRS256)
+
+	claims := token.Claims.(jwt.MapClaims)
+	claims["snum"] = user.Snum
+	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+
+	t, err := token.SignedString(key)
+	if err != nil {
+		panic(err)
+	}
+
+	return c.JSON(http.StatusOK, struct {
 		Status string `json:"status"`
+		Token  string `json:"token"`
 	}{
-		Status: "fail",
+		Status: "success",
+		Token:  t,
 	})
 }
 
