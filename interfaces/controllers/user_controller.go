@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	_ "encoding/hex"
-	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
 	"net/http"
@@ -97,12 +95,10 @@ func (controller *UserController) Login(c Context) error {
 
 func toHashPassword(pass string) string {
 	converted, _ := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
-	return string(converted) //hex.EncodeToString(converted[:])
+	return string(converted)
 }
 
 func compareHashedPassword(hash string, pass string) bool {
-	fmt.Println(hash + "\n")
-	fmt.Println(pass + "\n")
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pass))
 	if err == nil {
 		return true

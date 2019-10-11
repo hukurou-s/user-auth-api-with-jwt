@@ -7,5 +7,6 @@
 
 rsa/id_rsa
 rsa/id_rsa.pub
+rsa/id_rsa.pub.pkcs8
 
 .env
