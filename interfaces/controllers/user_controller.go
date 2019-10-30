@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	_ "fmt"
 	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
 	"net/http"
@@ -31,6 +32,15 @@ func (controller *UserController) Create(c Context) error {
 	if err := c.Bind(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, err)
 	}
+
+	if user.Name == "" || user.Snum == "" || user.Password == "" {
+		return c.JSON(http.StatusBadRequest, struct {
+			Status string `json:"status"`
+		}{
+			Status: "fail",
+		})
+	}
+
 	user.Password = toHashPassword(user.Password)
 
 	err := controller.Interactor.Add(user)
@@ -47,12 +57,12 @@ func (controller *UserController) Create(c Context) error {
 func (controller *UserController) Login(c Context) error {
 	loginParams := new(domain.LoginParams)
 	if err := c.Bind(loginParams); err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
+		return c.JSON(http.StatusBadRequest, err)
 	}
 
 	user, err := controller.Interactor.UserBySnum(loginParams.Snum)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
+		return c.JSON(http.StatusUnauthorized, err)
 	}
 
 	if !compareHashedPassword(user.Password, loginParams.Password) {
@@ -76,6 +86,7 @@ func (controller *UserController) Login(c Context) error {
 	token := jwt.New(jwt.SigningMethodRS256)
 
 	claims := token.Claims.(jwt.MapClaims)
+	claims["sub"] = user.ID
 	claims["snum"] = user.Snum
 	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
 
