@@ -5,6 +5,9 @@
 
 *.out
 
+# binary
+user-auth-api-with-jwt
+
 rsa/id_rsa
 rsa/id_rsa.pub
 rsa/id_rsa.pub.pkcs8
