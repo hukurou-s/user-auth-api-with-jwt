@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	_ "fmt"
 	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
 	"net/http"
@@ -44,6 +43,45 @@ func (controller *UserController) Create(c Context) error {
 	user.Password = toHashPassword(user.Password)
 
 	err := controller.Interactor.Add(user)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err)
+	}
+	return c.JSON(http.StatusOK, struct {
+		Status string `json:"status"`
+	}{
+		Status: "success",
+	})
+}
+
+func (controller *UserController) ChangePassword(c Context) error {
+	jwtUser := c.Get("user").(*jwt.Token)
+	claims := jwtUser.Claims.(jwt.MapClaims)
+	userID := int(claims["sub"].(float64))
+	params := new(struct {
+		PasswordNow string `json:"passwordNow"`
+		PasswordNew string `json:"passwordNew"`
+	})
+	if err := c.Bind(&params); err != nil {
+		return c.JSON(http.StatusBadRequest, err)
+	}
+
+	user, err := controller.Interactor.UserByID(userID)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, err)
+	}
+
+	if !compareHashedPassword(user.Password, params.PasswordNow) {
+		return c.JSON(http.StatusUnauthorized, struct {
+			Status string `json:"status"`
+		}{
+			Status: "fail",
+		})
+
+	}
+
+	user.Password = toHashPassword(params.PasswordNew)
+
+	err = controller.Interactor.Update(user)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err)
 	}

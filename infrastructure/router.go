@@ -39,6 +39,7 @@ func init() {
 		SigningMethod: "RS256",
 	}))
 	u.POST("/create", func(c echo.Context) error { return controller.Create(c) })
+	u.POST("/change-password", func(c echo.Context) error { return controller.ChangePassword(c) })
 
 	Echo = e
 }

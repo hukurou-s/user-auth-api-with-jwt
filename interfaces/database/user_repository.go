@@ -20,8 +20,17 @@ func (repo *UserRepository) Store(u domain.User) (id int, err error) {
 	return
 }
 
+func (repo *UserRepository) Update(u domain.User) (id int, err error) {
+	if result := repo.Save(&u); result.Error != nil {
+		err = result.Error
+		return
+	}
+	id = int(u.ID)
+	return
+}
+
 func (repo *UserRepository) FindByID(id int) (user domain.User, err error) {
-	if result := repo.Where(&user, id); result.Error != nil {
+	if result := repo.First(&user, id); result.Error != nil {
 		err = result.Error
 		return
 	}
